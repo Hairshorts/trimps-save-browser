@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Trimps Save Browser</title>
+    <script src="lz-string.js"></script>
+</head>
+<body>
+
+<div id="saveInput" class="saveInput">
+    <label for="saveField">Paste your save here: </label><input type="text" id="saveField" class="saveField">
+    <label for="selectNotation">Select notation: </label>
+    <select name="selectNotation" id="selectNotation">
+        <option value="standard">Standard</option>
+        <option value="scientific">Scientific</option>
+        <option value="engineering">Engineering</option>
+        <option value="alphabetic">Alphabetic</option>
+        <option value="hybrid">Hybrid</option>
+    </select>
+    <input type="submit" value="Submit" class="saveSubmit">
+</div>
+
+<div id="saveInfo" class="saveInfo">
+    <h3>Overall Stats</h3>
+    <table id="overallTable" class="overallTable"><tr><td>--</td></tr></table>
+    <h3>Current Run Stats</h3>
+    <table id="runTable" class="runTable"><tr><td>--</td></tr></table>
+</div>
+
+<script>
+    let notation = 'standard';
+
+    function prettifySub(number) {
+        number = parseFloat(number);
+        let floor = Math.floor(number);
+        if (number === floor) // number is an integer, just show it as-is
+            return number;
+        return number.toFixed(3 - floor.toString().length);
+    }
+
+    function prettify(number) {
+        let suffix;
+        let numberTmp = number;
+        if (!isFinite(number)) return "<span class='icomoon icon-infinity'></span>";
+        if (number >= 1000 && number < 10000) return Math.floor(number);
+        if (number === 0) return prettifySub(0);
+        if (number < 0) return "-" + prettify(-number);
+        if (number < 0.005) return (+number).toExponential(2);
+
+        let base = Math.floor(Math.log(number) / Math.log(1000));
+        if (base <= 0) return prettifySub(number);
+
+        if (notation === 'logarithmic') {
+            //Thanks ZXV
+            let logBase = 10;
+            let exponent = Math.log(number) / Math.log(logBase);
+            return prettifySub(exponent) + "L" + logBase;
+        }
+
+        number /= Math.pow(1000, base);
+        if (number >= 999.5) {
+            // 999.5 rounds to 1000 and we don’t want to show “1000K” or such
+            number /= 1000;
+            ++base;
+        }
+        if (notation === 'alphabetic') {
+            let suffices = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
+            if (base <= suffices.length) suffix = suffices[base - 1];
+            else {
+                let suf2 = (base % suffices.length) - 1;
+                if (suf2 < 0) suf2 = suffices.length - 1;
+                suffix = suffices[Math.ceil(base / suffices.length) - 2] + suffices[suf2];
+            }
+        } else {
+            let suffices = [
+                'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc', 'Ud',
+                'Dd', 'Td', 'Qad', 'Qid', 'Sxd', 'Spd', 'Od', 'Nd', 'V', 'Uv', 'Dv',
+                'Tv', 'Qav', 'Qiv', 'Sxv', 'Spv', 'Ov', 'Nv', 'Tg', 'Utg', 'Dtg', 'Ttg',
+                'Qatg', 'Qitg', 'Sxtg', 'Sptg', 'Otg', 'Ntg', 'Qaa', 'Uqa', 'Dqa', 'Tqa',
+                'Qaqa', 'Qiqa', 'Sxqa', 'Spqa', 'Oqa', 'Nqa', 'Qia', 'Uqi', 'Dqi',
+                'Tqi', 'Qaqi', 'Qiqi', 'Sxqi', 'Spqi', 'Oqi', 'Nqi', 'Sxa', 'Usx',
+                'Dsx', 'Tsx', 'Qasx', 'Qisx', 'Sxsx', 'Spsx', 'Osx', 'Nsx', 'Spa',
+                'Usp', 'Dsp', 'Tsp', 'Qasp', 'Qisp', 'Sxsp', 'Spsp', 'Osp', 'Nsp',
+                'Og', 'Uog', 'Dog', 'Tog', 'Qaog', 'Qiog', 'Sxog', 'Spog', 'Oog',
+                'Nog', 'Na', 'Un', 'Dn', 'Tn', 'Qan', 'Qin', 'Sxn', 'Spn', 'On',
+                'Nn', 'Ct', 'Uc'
+            ];
+            if (notation === 'engineering' || (notation === 'standard' && base > suffices.length) || (notation === 'hybrid' && base > 31))
+                suffix = "e" + ((base) * 3);
+            else if (notation !== 'scientific' && base <= suffices.length)
+                suffix = suffices[base - 1];
+            else {
+                let exponent = parseFloat(numberTmp).toExponential(2);
+                exponent = exponent.replace('+', '');
+                return exponent;
+            }
+        }
+        return prettifySub(number) + suffix;
+    }
+
+    const saveField = document.querySelector('.saveField');
+    const saveSubmit = document.querySelector('.saveSubmit');
+    const saveInfo = document.querySelector('.saveInfo');
+    const selectNotation = document.getElementById('selectNotation');
+
+    const overallTable = document.getElementById('overallTable');
+    const runTable = document.getElementById('runTable');
+
+    function processSave() {
+        notation = selectNotation.options[selectNotation.selectedIndex].value;
+
+        let compressedSaveData = saveField.value;
+        let saveData;
+
+        try {
+            saveData = JSON.parse(LZString.decompressFromBase64(compressedSaveData));
+        }
+        catch (error) {
+            console.log(error);
+            alert('This does not appear to be a valid Trimps save!');
+            return;
+        }
+
+        let requiredGlobalProperties = ['totalHeliumEarned', 'highestLevelCleared'];
+
+        for (let property of requiredGlobalProperties) {
+            if (!(property in saveData.global)) {
+                console.log(property + ' is not defined');
+                alert('This does not appear to be a valid Trimps save!');
+                return;
+            }
+        }
+
+        let helium = saveData.global.totalHeliumEarned;
+        let hze = saveData.global.highestLevelCleared + 1;
+        let portals = saveData.global.totalPortals;
+        let helium_this_portal = saveData.resources.helium.owned;
+
+        function addRow(label, value, table) {
+            console.log(label);
+            console.log(value);
+            let tr = table.insertRow();
+            let labelCell = tr.insertCell();
+            labelCell.appendChild(document.createTextNode(label));
+            let valueCell = tr.insertCell();
+            valueCell.appendChild(document.createTextNode(value));
+        }
+
+        overallTable.innerHTML = '';
+        addRow('Helium:', prettify(helium), overallTable);
+        addRow('HZE:', hze, overallTable);
+        addRow('Portals:', portals, overallTable);
+
+        runTable.innerHTML = '';
+        addRow('Helium:', prettify(helium_this_portal), runTable);
+
+    }
+
+    saveSubmit.addEventListener('click', processSave);
+
+</script>
+</body>
+</html>
