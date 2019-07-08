@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <title>Trimps Save Browser</title>
     <script src="lz-string.js"></script>
+    <script src="trimps.js"></script>
 </head>
 <body>
 
 <div id="saveInput" class="saveInput">
-    <label for="saveField">Paste your save here: </label><input type="text" id="saveField" class="saveField">
+    <label for="saveField">Paste save: </label><input type="text" id="saveField" class="saveField">
+    <p>
     <label for="selectNotation">Select notation: </label>
     <select name="selectNotation" id="selectNotation">
         <option value="standard">Standard</option>
@@ -17,13 +19,19 @@
         <option value="alphabetic">Alphabetic</option>
         <option value="hybrid">Hybrid</option>
     </select>
-    <input type="submit" value="Submit" class="saveSubmit">
+    <input type="submit" value="Submit" id="saveSubmit" class="saveSubmit">
 </div>
 
 <div id="saveInfo" class="saveInfo">
     <h3>Overall Stats</h3>
     <table id="overallTable" class="overallTable"><tr><td>--</td></tr></table>
-    <h3>Current Run Stats</h3>
+    <h3>Bone Portal</h3>
+    <table id="bonePortalTable" class="bonePortalTable"><tr><td>--</td></tr></table>
+    <h3>Shield</h3>
+    <table id="shieldTable" class="shieldTable"><tr><td>--</td></tr></table>
+    <h3>Staff</h3>
+    <table id="staffTable" class="staffTable"><tr><td>--</td></tr></table>
+    <h3>Run Stats</h3>
     <table id="runTable" class="runTable"><tr><td>--</td></tr></table>
 </div>
 
@@ -98,22 +106,24 @@
         return prettifySub(number) + suffix;
     }
 
-    const saveField = document.querySelector('.saveField');
-    const saveSubmit = document.querySelector('.saveSubmit');
-    const saveInfo = document.querySelector('.saveInfo');
+    const saveField = document.getElementById('saveField');
+    const saveSubmit = document.getElementById('saveSubmit');
+    const saveInfo = document.getElementById('saveInfo');
     const selectNotation = document.getElementById('selectNotation');
 
     const overallTable = document.getElementById('overallTable');
+    const bonePortalTable = document.getElementById('bonePortalTable');
     const runTable = document.getElementById('runTable');
+    const shieldTable = document.getElementById('shieldTable');
+    const staffTable = document.getElementById('staffTable');
 
     function processSave() {
         notation = selectNotation.options[selectNotation.selectedIndex].value;
 
         let compressedSaveData = saveField.value;
-        let saveData;
 
         try {
-            saveData = JSON.parse(LZString.decompressFromBase64(compressedSaveData));
+            game = JSON.parse(LZString.decompressFromBase64(compressedSaveData));
         }
         catch (error) {
             console.log(error);
@@ -121,20 +131,35 @@
             return;
         }
 
+        Fluffy.calculateExp();
+        Fluffy.calculateLevel();
+
         let requiredGlobalProperties = ['totalHeliumEarned', 'highestLevelCleared'];
 
         for (let property of requiredGlobalProperties) {
-            if (!(property in saveData.global)) {
+            if (!(property in game.global)) {
                 console.log(property + ' is not defined');
                 alert('This does not appear to be a valid Trimps save!');
                 return;
             }
         }
 
-        let helium = saveData.global.totalHeliumEarned;
-        let hze = saveData.global.highestLevelCleared + 1;
-        let portals = saveData.global.totalPortals;
-        let helium_this_portal = saveData.resources.helium.owned;
+        let helium = game.global.totalHeliumEarned;
+        let hze = game.global.highestLevelCleared + 1;
+        let portals = game.global.totalPortals;
+        let fluffyPrestige = game.global.fluffyPrestige;
+        let fluffyLevel = Fluffy.currentLevel;
+        let fluffyExp = game.global.fluffyExp;
+
+        let cell = game.global.lastClearedCell < 0 ? 1 : game.global.lastClearedCell+ 1;
+        let zone = game.global.world;
+        let helium_this_portal = game.resources.helium.owned;
+
+        let fluffyBP = game.stats.bestFluffyExp.valueTotal;
+        let heliumBP = game.global.bestHelium;
+        let tokenBP = Math.floor(game.stats.bestTokens.valueTotal / 3);
+
+        let c2_bonus = game.global.totalSquaredReward;
 
         function addRow(label, value, table) {
             console.log(label);
@@ -147,16 +172,54 @@
         }
 
         overallTable.innerHTML = '';
-        addRow('Helium:', prettify(helium), overallTable);
         addRow('HZE:', hze, overallTable);
+        addRow('Helium:', prettify(helium), overallTable);
+        addRow('Challenge²:', prettify(c2_bonus), overallTable);
+
+        if (fluffyLevel > 0 || fluffyPrestige > 0 || fluffyExp > 0) {
+            addRow('Fluffy:', 'E' + fluffyPrestige + 'L' + fluffyLevel, overallTable);
+            addRow('Fluffy exp:', prettify(fluffyExp), overallTable);
+        }
+
         addRow('Portals:', portals, overallTable);
 
+        bonePortalTable.innerHTML = '';
+        addRow('Helium:', prettify(heliumBP), bonePortalTable);
+        addRow('Fluffy Exp:', prettify(fluffyBP), bonePortalTable);
+        addRow('Tokens:', tokenBP, bonePortalTable);
+
+        shieldTable.innerHTML = '';
+        for (let property in game.heirlooms.Shield) {
+            if (game.heirlooms.Shield.hasOwnProperty(property)) {
+                let object = game.heirlooms.Shield[property];
+                let bonus = object.currentBonus;
+                if (bonus > 0) {
+                    addRow(shieldBonusNames[property], bonus + '%', shieldTable);
+                }
+            }
+        }
+
+        staffTable.innerHTML = '';
+        for (let property in game.heirlooms.Staff) {
+            if (game.heirlooms.Staff.hasOwnProperty(property)) {
+                let object = game.heirlooms.Staff[property];
+                let bonus = object.currentBonus;
+                if (bonus > 0) {
+                    addRow(staffBonusNames[property], bonus + '%', staffTable);
+                }
+            }
+        }
+
         runTable.innerHTML = '';
+        addRow('Progress:', 'Zone ' + zone + ', cell ' + cell, runTable);
         addRow('Helium:', prettify(helium_this_portal), runTable);
 
     }
 
+    saveField.addEventListener('focus', function() { this.select(); });
+    saveField.addEventListener('paste', processSave);
     saveSubmit.addEventListener('click', processSave);
+
 
 </script>
 </body>
