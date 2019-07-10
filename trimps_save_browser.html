@@ -31,6 +31,8 @@
     <table id="shieldTable" class="shieldTable"><tr><td>--</td></tr></table>
     <h3>Staff</h3>
     <table id="staffTable" class="staffTable"><tr><td>--</td></tr></table>
+    <h3>Nature</h3>
+    <table id="natureTable" class="natureTable"><tr><td>--</td></tr></table>
     <h3>Run Stats</h3>
     <table id="runTable" class="runTable"><tr><td>--</td></tr></table>
 </div>
@@ -116,6 +118,7 @@
     const runTable = document.getElementById('runTable');
     const shieldTable = document.getElementById('shieldTable');
     const staffTable = document.getElementById('staffTable');
+    const natureTable = document.getElementById('natureTable');
 
     function processSave() {
         notation = selectNotation.options[selectNotation.selectedIndex].value;
@@ -160,6 +163,25 @@
         let tokenBP = Math.floor(game.stats.bestTokens.valueTotal / 3);
 
         let c2_bonus = game.global.totalSquaredReward;
+
+        let poisonLevel = game.empowerments.Poison.level;
+        let windLevel = game.empowerments.Wind.level;
+        let iceLevel = game.empowerments.Ice.level;
+
+        let poisonLevelDisplay;
+        let windLevelDisplay;
+        let iceLevelDisplay;
+
+        if (game.talents.nature3.purchased) {
+            poisonLevelDisplay = poisonLevel + 5;
+            windLevelDisplay = windLevel + 5;
+            iceLevelDisplay = iceLevel + 5;
+        }
+        else {
+            poisonLevelDisplay = poisonLevel;
+            windLevelDisplay = windLevel;
+            iceLevelDisplay = iceLevel;
+        }
 
         function addRow(label, value, table) {
             console.log(label);
@@ -214,6 +236,10 @@
         addRow('Progress:', 'Zone ' + zone + ', cell ' + cell, runTable);
         addRow('Helium:', prettify(helium_this_portal), runTable);
 
+        natureTable.innerHTML = '';
+        addRow('Poison level:', poisonLevelDisplay, natureTable);
+        addRow('Wind level:', windLevelDisplay, natureTable);
+        addRow('Ice level:', iceLevelDisplay, natureTable);
     }
 
     saveField.addEventListener('focus', function() { this.select(); });
