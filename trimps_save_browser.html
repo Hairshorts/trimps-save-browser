@@ -163,6 +163,7 @@
         let tokenBP = Math.floor(game.stats.bestTokens.valueTotal / 3);
 
         let c2_bonus = game.global.totalSquaredReward;
+        let achievementBonus = game.global.achievementBonus;
 
         let poisonLevel = game.empowerments.Poison.level;
         let windLevel = game.empowerments.Wind.level;
@@ -183,6 +184,18 @@
             iceLevelDisplay = iceLevel;
         }
 
+        let totalMasteryCount = 0;
+        let ownedMasteryCount = 0;
+
+        for (let mastery in game.talents) {
+            if (game.talents.hasOwnProperty(mastery)) {
+                totalMasteryCount++;
+                if (game.talents[mastery].purchased) {
+                    ownedMasteryCount++;
+                }
+            }
+        }
+
         function addRow(label, value, table) {
             console.log(label);
             console.log(value);
@@ -200,9 +213,11 @@
 
         if (fluffyLevel > 0 || fluffyPrestige > 0 || fluffyExp > 0) {
             addRow('Fluffy:', 'E' + fluffyPrestige + 'L' + fluffyLevel, overallTable);
-            addRow('Fluffy exp:', prettify(fluffyExp), overallTable);
+            // addRow('Fluffy exp:', prettify(fluffyExp), overallTable);
         }
 
+        addRow('Masteries:', ownedMasteryCount + ' / ' + totalMasteryCount, overallTable);
+        addRow('Achievement:', achievementBonus + '%', overallTable);
         addRow('Portals:', portals, overallTable);
 
         bonePortalTable.innerHTML = '';
