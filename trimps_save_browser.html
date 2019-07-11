@@ -2,15 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
     <title>Trimps Save Browser</title>
     <script src="lz-string.js"></script>
     <script src="trimps.js"></script>
 </head>
 <body>
 
-<div id="saveInput" class="saveInput">
+<div id="saveInput" class="saveInput container">
     <label for="saveField">Paste save: </label><input type="text" id="saveField" class="saveField">
-    <p>
     <label for="selectNotation">Select notation: </label>
     <select name="selectNotation" id="selectNotation">
         <option value="standard">Standard</option>
@@ -22,20 +24,62 @@
     <input type="submit" value="Submit" id="saveSubmit" class="saveSubmit">
 </div>
 
-<div id="saveInfo" class="saveInfo">
-    <h3>Overall Stats</h3>
-    <table id="overallTable" class="overallTable"><tr><td>--</td></tr></table>
-    <h3>Bone Portal</h3>
-    <table id="bonePortalTable" class="bonePortalTable"><tr><td>--</td></tr></table>
-    <h3>Shield</h3>
-    <table id="shieldTable" class="shieldTable"><tr><td>--</td></tr></table>
-    <h3>Staff</h3>
-    <table id="staffTable" class="staffTable"><tr><td>--</td></tr></table>
-    <h3>Nature</h3>
-    <table id="natureTable" class="natureTable"><tr><td>--</td></tr></table>
-    <h3>Run Stats</h3>
-    <table id="runTable" class="runTable"><tr><td>--</td></tr></table>
+<p></p>
+
+<div id="saveInfo" class="saveInfo container">
+    <div class="row form-group">
+        <div class="col-sm"><h3>Overall Stats</h3>
+            <table id="overallTable" class="overallTable stat-section table table-striped">
+                <tr>
+                    <td>--</td>
+                </tr>
+            </table>
+        </div>
+        <div class="col-sm"><h3>Run Stats</h3>
+            <table id="runTable" class="runTable stat-section table table-striped">
+                <tr>
+                    <td>--</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="row form-group">
+        <div class="col-sm"><h3>Nature</h3>
+            <table id="natureTable" class="natureTable stat-section table table-striped">
+                <tr>
+                    <td>--</td>
+                </tr>
+            </table>
+        </div>
+        <div class="col-sm"><h3>Bone Portal</h3>
+            <table id="bonePortalTable" class="bonePortalTable stat-section table table-striped">
+                <tr>
+                    <td>--</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="row form-group">
+        <div class="col-sm"><h3>Shield</h3>
+            <table id="shieldTable" class="shieldTable stat-section table table-striped">
+                <tr>
+                    <td>--</td>
+                </tr>
+            </table>
+        </div>
+        <div class="col-sm"><h3>Staff</h3>
+            <table id="staffTable" class="staffTable stat-section table table-striped">
+                <tr>
+                    <td>--</td>
+                </tr>
+            </table>
+        </div>
+    </div>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
 <script>
     let notation = 'standard';
@@ -156,7 +200,12 @@
 
         let cell = game.global.lastClearedCell < 0 ? 1 : game.global.lastClearedCell+ 1;
         let zone = game.global.world;
-        let helium_this_portal = game.resources.helium.owned;
+        let heliumThisPortal = game.resources.helium.owned;
+        let fluffyThisPortal = game.stats.bestFluffyExp.value;
+        let activeChallenge = game.global.challengeActive;
+        if (activeChallenge === '') {
+            activeChallenge = 'None';
+        }
 
         let fluffyBP = game.stats.bestFluffyExp.valueTotal;
         let heliumBP = game.global.bestHelium;
@@ -207,23 +256,38 @@
         }
 
         overallTable.innerHTML = '';
-        addRow('HZE:', hze, overallTable);
-        addRow('Helium:', prettify(helium), overallTable);
-        addRow('Challenge²:', prettify(c2_bonus), overallTable);
+        addRow('HZE', hze, overallTable);
+        addRow('Helium', prettify(helium), overallTable);
 
-        if (fluffyLevel > 0 || fluffyPrestige > 0 || fluffyExp > 0) {
-            addRow('Fluffy:', 'E' + fluffyPrestige + 'L' + fluffyLevel, overallTable);
-            // addRow('Fluffy exp:', prettify(fluffyExp), overallTable);
+        if (c2_bonus > 0) {
+            addRow('Challenge²', prettify(c2_bonus), overallTable);
         }
 
-        addRow('Masteries:', ownedMasteryCount + ' / ' + totalMasteryCount, overallTable);
-        addRow('Achievement:', achievementBonus + '%', overallTable);
-        addRow('Portals:', portals, overallTable);
+        if (fluffyLevel > 0 || fluffyPrestige > 0 || fluffyExp > 0) {
+            addRow('Fluffy', 'E' + fluffyPrestige + 'L' + fluffyLevel, overallTable);
+            // addRow('Fluffy exp', prettify(fluffyExp), overallTable);
+        }
+
+        if (ownedMasteryCount > 0) {
+            addRow('Masteries', ownedMasteryCount + ' / ' + totalMasteryCount, overallTable);
+        }
+
+        addRow('Achievement', achievementBonus + '%', overallTable);
+
+        if (portals > 0) {
+            addRow('Portals', portals, overallTable);
+        }
 
         bonePortalTable.innerHTML = '';
-        addRow('Helium:', prettify(heliumBP), bonePortalTable);
-        addRow('Fluffy Exp:', prettify(fluffyBP), bonePortalTable);
-        addRow('Tokens:', tokenBP, bonePortalTable);
+        addRow('Helium', prettify(heliumBP), bonePortalTable);
+
+        if (fluffyBP > 0) {
+            addRow('Fluffy Exp', prettify(fluffyBP), bonePortalTable);
+        }
+
+        if (tokenBP > 0) {
+            addRow('Tokens', tokenBP, bonePortalTable);
+        }
 
         shieldTable.innerHTML = '';
         for (let property in game.heirlooms.Shield) {
@@ -248,13 +312,19 @@
         }
 
         runTable.innerHTML = '';
-        addRow('Progress:', 'Zone ' + zone + ', cell ' + cell, runTable);
-        addRow('Helium:', prettify(helium_this_portal), runTable);
+        addRow('Progress', 'Zone ' + zone + ', cell ' + cell, runTable);
+        addRow('Helium', prettify(heliumThisPortal), runTable);
+
+        if (fluffyThisPortal > 0 || fluffyExp > 0) {
+            addRow('Fluffy Exp.', prettify(fluffyThisPortal), runTable);
+        }
+
+        addRow('Active Challenge', activeChallenge, runTable);
 
         natureTable.innerHTML = '';
-        addRow('Poison level:', poisonLevelDisplay, natureTable);
-        addRow('Wind level:', windLevelDisplay, natureTable);
-        addRow('Ice level:', iceLevelDisplay, natureTable);
+        addRow('Poison level', poisonLevelDisplay, natureTable);
+        addRow('Wind level', windLevelDisplay, natureTable);
+        addRow('Ice level', iceLevelDisplay, natureTable);
     }
 
     saveField.addEventListener('focus', function() { this.select(); });
